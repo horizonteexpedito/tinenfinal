@@ -2439,7 +2439,15 @@ export default function SigiloX() {
                       </p>
                     </div>
 
-                    {/* Direct Checkout Button - Fixed Text Overflow */} <Button onClick={() => (window.location.href = "https://pay.mundpay.com/0199049a-2657-7034-ba90-39e99cd470e1?ref=")} className="w-full bg-gradient-to-r from-[#FF0066] to-[#FF3333] hover:from-[#FF0066] hover:to-[#FF3333] text-white font-bold py-4 sm:py-6 text-sm sm:text-base md:text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 mb-4 sm:mb-6 overflow-hidden" > <span className="block text-center leading-tight px-2"> 🔓 UNLOCK MY REPORT - I'M READY FOR THE TRUTH </span> </Button>
+                    {/* Direct Checkout Button - Usando a tag <a> (Recomendado) */}
+<a
+  href="https://pay.mundpay.com/0199049a-2657-7034-ba90-39e99cd470e1?ref="
+  target="_blank"
+  rel="noopener noreferrer"
+  className="block w-full text-center bg-gradient-to-r from-[#FF0066] to-[#FF3333] hover:from-[#FF0066] hover:to-[#FF3333] text-white font-bold py-4 sm:py-6 text-sm sm:text-base md:text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 mb-4 sm:mb-6 overflow-hidden"
+>
+  <span className="block text-center leading-tight px-2"> 🔓 UNLOCK MY REPORT - I'M READY FOR THE TRUTH </span>
+</a>
 
                     {/* Final Reassurance */}
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">

@@ -25,12 +25,6 @@
             to { opacity: 1; transform: scale(1); }
         }
         
-        /* Estilos da MundPay */
-        .mndpay_container { display: flex; flex-direction: column; width: 100%; max-width: 36rem; margin: 0 auto; gap: 1rem; }
-        .mndpay_btn { background: #093b0a; border-radius: 10px; color: #ffffff; font-family: Arial; font-size: 18px; font-weight: 100; padding: 10px 20px; text-decoration: none; display: block; cursor: pointer; text-align: center; }
-        .mndpay_downsell { background: #DC2626; border-radius: 10px; color: #FFFFFF; font-family: Arial; font-size: 18px; font-weight: 100; padding: 10px 20px; text-decoration: none; display: block; cursor: pointer; text-align: center; }
-        @media (min-width: 640px) { .mndpay_container { flex-direction: column; } }
-        
         /* Estilo para o marcador pulsante no mapa do Leaflet */
         .pulsing-dot-marker {
             width: 20px;
@@ -194,9 +188,8 @@
                             <div class="flex items-center gap-2"><svg class="w-5 h-5 text-green-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg><span class="text-sm">Track up to 3 numbers</span></div>
                         </div>
                         <div class="text-center" style="width: auto; max-width: 400px; margin: 0 auto;">
-                            <div class="mndpay_container">
-                                <a href="javascript:void(0)" data-mndpay="019904a7-323f-715f-9bf0-f62e26f3195a" class="mndpay_btn">ACESS NOW</a>
-                            </div>
+                            <!-- HOTMART - Sales Funnel Container -->
+                            <div id="hotmart-sales-funnel"></div>
                         </div>
                     </div>
                 </div>
@@ -356,7 +349,12 @@
             }
         });
     </script>
-    <!-- Script da MundPay para Upsell -->
-    <script src="https://upsell.mundpay.com/script.js"></script>
+
+    <!-- HOTMART - Sales Funnel Widget -->
+    <script src="https://checkout.hotmart.com/lib/hotmart-checkout-elements.js"></script>
+    <script>
+        checkoutElements.init('salesFunnel').mount('#hotmart-sales-funnel');
+    </script>
+    
 </body>
 </html>

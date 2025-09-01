@@ -13,58 +13,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     
-    <!-- ======================================================= -->
-    <!--     CÓDIGO MUNDPAY ADICIONADO AQUI                      -->
-    <!-- ======================================================= -->
-    <style>
-      .mndpay_container {
-          display: flex;
-          flex-direction: column;
-          width: 100%;
-          max-width: 36rem;
-          margin: 0 auto;
-          gap: 1rem;
-      }
-
-      .mndpay_btn {
-        background: #052e05;
-        -webkit-border-radius: 10px;
-        -moz-border-radius: 10px;
-        border-radius: 10px;
-        color: #ffffff;
-        font-family: Arial;
-        font-size: 18px;
-        font-weight: 100;
-        padding: 10px 20px;
-        text-decoration: none;
-        display: block;
-        cursor: pointer;
-        text-align: center;
-      }
-
-      .mndpay_downsell {
-        background: #DC2626;
-        -webkit-border-radius: 10px;
-        -moz-border-radius: 10px;
-        border-radius: 10px;
-        color: #FFFFFF;
-        font-family: Arial;
-        font-size: 18px;
-        font-weight: 100;
-        padding: 10px 20px;
-        text-decoration: none;
-        display: block;
-        cursor: pointer;
-        text-align: center;
-      }
-
-      @media (min-width: 640px) {
-        .mndpay_container {
-          flex-direction: column;
-        }
-      }
-    </style>
-
     <style>
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -118,10 +66,10 @@
                         <p class="text-xl mb-6"><strong>Congratulations on your courage to seek the truth about your relationship.</strong> It's painful to imagine your loved one sharing moments with someone else, but you have the intelligence and determination to discover the truth.</p>
                         <p class="text-lg mb-6">Our advanced application allows you to <strong>recover all deleted messages, photos and videos</strong> without letting any secret be hidden from you.</p>
                         <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6 mb-6">
-  <p class="text-lg mb-4 text-center">
-    <strong>This exclusive offer is only available on this page.</strong>
-  </p>
-</div>
+                          <p class="text-lg mb-4 text-center">
+                            <strong>This exclusive offer is only available on this page.</strong>
+                          </p>
+                        </div>
                     </div>
                 </div>
 
@@ -160,10 +108,11 @@
                 </div>
 
                 <!-- ======================================================= -->
-                <!-- ÁREA DE ALTERAÇÃO: MONETIZZE REMOVIDA, MUNDPAY INSERIDA -->
+                <!-- ÁREA DE ALTERAÇÃO: MUNDPAY REMOVIDO, HOTMART INSERIDO    -->
                 <!-- ======================================================= -->
-                <div class="mndpay_container">
-                    <a href="javascript:void(0)" data-mndpay="019904d0-f5f7-73b5-a9e9-5e86db636ecf" class="mndpay_btn">I WANT TO SEE DELETED AND HIDDEN MESSAGES</a>
+                <div class="max-w-lg mx-auto">
+                    <!-- HOTMART - Sales Funnel Container -->
+                    <div id="hotmart-sales-funnel"></div>
                 </div>
 
             </div>
@@ -207,6 +156,10 @@
         });
     </script>
     
+    <!-- HOTMART - Sales Funnel Widget -->
+    <script src="https://checkout.hotmart.com/lib/hotmart-checkout-elements.js"></script>
+    <script>
+        checkoutElements.init('salesFunnel').mount('#hotmart-sales-funnel')
+    </script>
 </body>
-<script src="https://upsell.mundpay.com/script.js"></script>
 </html>

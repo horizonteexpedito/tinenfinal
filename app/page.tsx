@@ -425,10 +425,8 @@ export default function SigiloX() {
   const [emailSubmitted, setEmailSubmitted] = useState(false)
   const [generatedProfiles, setGeneratedProfiles] = useState<any[]>([])
   const [selectedRandomPhoto, setSelectedRandomPhoto] = useState<string | null>(null)
-
   const [selectedProfile, setSelectedProfile] = useState<any>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
-
   const [selectedCountry, setSelectedCountry] = useState({
     code: "+1",
     name: "United States",
@@ -437,6 +435,108 @@ export default function SigiloX() {
   })
   const [showCountryDropdown, setShowCountryDropdown] = useState(false)
   const [countrySearch, setCountrySearch] = useState("")
+
+  // --- INÍCIO DA CORREÇÃO: LÓGICA DE "DEBOUNCE" ---
+
+  // NOVO ESTADO para guardar o número de telefone "atrasado" que será enviado para a API
+  const [debouncedPhone, setDebouncedPhone] = useState("")
+
+  // EFEITO 1: O "DEBOUNCER"
+  // Este useEffect "escuta" o que o usuário digita (`phoneNumber`).
+  // Ele espera 800ms após a última tecla antes de atualizar `debouncedPhone`.
+  useEffect(() => {
+    // Configura um timer.
+    const handler = setTimeout(() => {
+      // Pega o valor atual e remove caracteres não numéricos.
+      const cleanPhone = phoneNumber.replace(/[^0-9]/g, "")
+      setDebouncedPhone(cleanPhone) // Atualiza o valor que vai para a API.
+    }, 800) // Atraso de 800ms.
+
+    // Função de limpeza: se o usuário digitar de novo, o timer anterior é cancelado.
+    // Isso garante que a API só seja chamada 800ms APÓS a última tecla.
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [phoneNumber]) // Roda toda vez que `phoneNumber` muda.
+
+  // EFEITO 2: O "CHAMADOR DA API"
+  // Este useEffect "escuta" o `debouncedPhone`. Ele só roda quando o valor "atrasado" muda.
+  useEffect(() => {
+    const fetchWhatsAppPhoto = async () => {
+      // Se o número for muito curto, limpa a foto e para a execução.
+      if (debouncedPhone.length < 10) {
+        setProfilePhoto(null)
+        setIsPhotoPrivate(false)
+        return
+      }
+
+      setIsLoadingPhoto(true)
+      setPhotoError("")
+      const fallbackUrl =
+        "https://media.istockphoto.com/id/1337144146/vector/default-avatar-profile-icon-vector.jpg?s=612x612&w=0&k=20&c=BIbFwuv7FxTWvh5S3vB6bkT0Qv8Vn8N5Ffseq84ClGI="
+
+      try {
+        const response = await fetch("/api/whatsapp-photo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: debouncedPhone }), // Usa o número "atrasado"
+        })
+
+        const data = await response.json()
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "Failed to fetch photo")
+        }
+
+        setProfilePhoto(data.result)
+        setIsPhotoPrivate(!!data.is_photo_private)
+      } catch (error) {
+        console.error("Erro ao buscar foto:", error)
+        setProfilePhoto(fallbackUrl)
+        setIsPhotoPrivate(true)
+        setPhotoError("Could not load photo.")
+      } finally {
+        setIsLoadingPhoto(false)
+      }
+    }
+
+    // Chama a função apenas se `debouncedPhone` tiver um valor.
+    if (debouncedPhone) {
+      fetchWhatsAppPhoto()
+    }
+  }, [debouncedPhone]) // A dependência agora é o valor "atrasado".
+
+  // A FUNÇÃO `handlePhoneChange` FICA MAIS SIMPLES
+  // Sua única responsabilidade é atualizar o estado `phoneNumber` em tempo real.
+  const handlePhoneChange = (value: string) => {
+    let formattedValue = value
+    if (!value.startsWith(selectedCountry.code)) {
+      if (value && !value.startsWith("+")) {
+        formattedValue = selectedCountry.code + " " + value
+      } else if (value.startsWith("+") && !value.startsWith(selectedCountry.code)) {
+        formattedValue = value
+      } else {
+        formattedValue = selectedCountry.code + " " + value.replace(selectedCountry.code, "").trim()
+      }
+    }
+    setPhoneNumber(formattedValue)
+  }
+
+  // Lógica para fechar o dropdown (continua a mesma)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showCountryDropdown) {
+        const target = event.target as Element
+        if (!target.closest(".relative")) {
+          setShowCountryDropdown(false)
+        }
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [showCountryDropdown])
+
+  // --- FIM DA CORREÇÃO ---
 
   const countries = [
     { code: "+1", name: "United States", flag: "🇺🇸", placeholder: "(555) 123-4567" },
@@ -826,97 +926,6 @@ export default function SigiloX() {
     }
   }, [currentStep])
 
-  const fetchWhatsAppPhoto = async (phone: string) => {
-    if (phone.length < 10) return
-
-    setIsLoadingPhoto(true)
-    setPhotoError("")
-
-    try {
-      const response = await fetch("/api/whatsapp-photo", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ phone: phone }),
-      })
-
-      // --- NEW robust handling (replaces old !response.ok throw) ---
-      let data: any = null
-
-      try {
-        data = await response.json()
-      } catch {
-        // if the body is not valid JSON we still want to fall back safely
-        data = {}
-      }
-
-      // When the API answers with non-200 we still carry on with a safe payload
-      if (!response.ok || !data?.success) {
-        setProfilePhoto(
-          "https://media.istockphoto.com/id/1337144146/vector/default-avatar-profile-icon-vector.jpg?s=612x612&w=0&k=20&c=BIbFwuv7FxTWvh5S3vB6bkT0Qv8Vn8N5Ffseq84ClGI=",
-        )
-        setIsPhotoPrivate(true)
-        setPhotoError("Could not load photo")
-        return
-      }
-
-      // ✅ Successful, public photo
-      setProfilePhoto(data.result)
-      setIsPhotoPrivate(!!data.is_photo_private)
-    } catch (error) {
-      console.error("Erro ao buscar foto:", error)
-      setProfilePhoto(
-        "https://media.istockphoto.com/id/1337144146/vector/default-avatar-profile-icon-vector.jpg?s=612x612&w=0&k=20&c=BIbFwuv7FxTWvh5S3vB6bkT0Qv8Vn8N5Ffseq84ClGI=",
-      )
-      setIsPhotoPrivate(true)
-      setPhotoError("Error loading photo")
-    } finally {
-      setIsLoadingPhoto(false)
-    }
-  }
-
-  const handlePhoneChange = (value: string) => {
-    // Ensure the value starts with the selected country code
-    let formattedValue = value
-    if (!value.startsWith(selectedCountry.code)) {
-      // If user is typing a number without country code, prepend it
-      if (value && !value.startsWith("+")) {
-        formattedValue = selectedCountry.code + " " + value
-      } else if (value.startsWith("+") && !value.startsWith(selectedCountry.code)) {
-        // User typed a different country code, keep it as is
-        formattedValue = value
-      } else {
-        formattedValue = selectedCountry.code + " " + value.replace(selectedCountry.code, "").trim()
-      }
-    }
-
-    setPhoneNumber(formattedValue)
-
-    // Extract just the numbers for API call
-    const cleanPhone = formattedValue.replace(/[^0-9]/g, "")
-    if (cleanPhone.length >= 10) {
-      fetchWhatsAppPhoto(cleanPhone)
-    } else {
-      setProfilePhoto(null)
-      setIsPhotoPrivate(false)
-    }
-  }
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (showCountryDropdown) {
-        const target = event.target as Element
-        if (!target.closest(".relative")) {
-          setShowCountryDropdown(false)
-        }
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [showCountryDropdown])
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
@@ -985,28 +994,28 @@ export default function SigiloX() {
   const [combinedPhotos3544, setCombinedPhotos3544] = useState<string[]>([])
   const [combinedPhotos4554, setCombinedPhotos4554] = useState<string[]>([])
 
-          const generateFakeProfiles = useCallback(() => {
+  const generateFakeProfiles = useCallback(() => {
     const profiles: any[] = []
     const usedNames: string[] = []
     const usedImages: string[] = []
 
     const getUniqueItem = (sourceArray: string[], usedArray: string[]) => {
-      if (!sourceArray || sourceArray.length === 0) return "/placeholder.svg";
-      const availableItems = sourceArray.filter(item => !usedArray.includes(item));
+      if (!sourceArray || sourceArray.length === 0) return "/placeholder.svg"
+      const availableItems = sourceArray.filter((item) => !usedArray.includes(item))
       if (availableItems.length === 0) {
-        return sourceArray[Math.floor(Math.random() * sourceArray.length)];
+        return sourceArray[Math.floor(Math.random() * sourceArray.length)]
       }
-      const selectedItem = availableItems[Math.floor(Math.random() * availableItems.length)];
-      usedArray.push(selectedItem);
-      return selectedItem;
+      const selectedItem = availableItems[Math.floor(Math.random() * availableItems.length)]
+      usedArray.push(selectedItem)
+      return selectedItem
     }
-    
-    let matchLocation = "";
+
+    let matchLocation = ""
     if (city) {
-        matchLocation = city;
+      matchLocation = city
     } else {
-        const defaultGlobalLocations = ["New York", "Los Angeles", "Chicago", "London"];
-        matchLocation = defaultGlobalLocations[Math.floor(Math.random() * defaultGlobalLocations.length)];
+      const defaultGlobalLocations = ["New York", "Los Angeles", "Chicago", "London"]
+      matchLocation = defaultGlobalLocations[Math.floor(Math.random() * defaultGlobalLocations.length)]
     }
 
     const sampleBios = [
@@ -1033,8 +1042,8 @@ export default function SigiloX() {
       "Always down for a hike or a late-night diner run. Pick your adventure!",
       "I’m the friend who’s always late but brings the best playlists. Wanna jam?",
       "Life’s too short for bad coffee or boring chats. Let’s make both epic.",
-      "Part dreamer, part doer, all about good vibes. Ready to make some memories?"
-];
+      "Part dreamer, part doer, all about good vibes. Ready to make some memories?",
+    ]
     const personalityTags = [
       ["Capricorn", "INTJ", "Cat"],
       ["Leo", "ENFP", "Dog"],
@@ -1059,8 +1068,8 @@ export default function SigiloX() {
       ["Aquarius", "ENTP", "Tech"],
       ["Pisces", "ISFJ", "Movies"],
       ["Cancer", "INFJ", "Poetry"],
-      ["Sagittarius", "ESFP", "Parties"]
-];
+      ["Sagittarius", "ESFP", "Parties"],
+    ]
     const interestTags = [
       ["Pro-Choice", "Coffee", "Black Lives Matter", "Tattoos"],
       ["Yoga", "Sustainability", "Photography", "Cooking"],
@@ -1085,58 +1094,76 @@ export default function SigiloX() {
       ["Swimming", "Feminism", "History", "Barbecue"],
       ["Photography", "Minimalism", "True Crime", "Road Trips"],
       ["Dancing", "Charity Work", "Animation", "Cocktails"],
-      ["Singing", "Ocean Conservation", "Mystery Novels", "Picnics"]
-];
-    const orientations = ["Straight", "Bisexual", "Pansexual", "Queer"];
+      ["Singing", "Ocean Conservation", "Mystery Novels", "Picnics"],
+    ]
+    const orientations = ["Straight", "Bisexual", "Pansexual", "Queer"]
 
     for (let i = 0; i < 3; i++) {
-      let profileGender: 'masculino' | 'feminino';
-      let profileAgeRange: keyof typeof maleNames;
-      
+      let profileGender: "masculino" | "feminino"
+      let profileAgeRange: keyof typeof maleNames
+
       if (selectedGender === "nao-binario") {
         // --- INÍCIO: LÓGICA CORRIGIDA PARA GARANTIR CONSISTÊNCIA ---
-        
-        // 1. Sorteia o GÊNERO para este perfil específico (homem ou mulher)
-        profileGender = Math.random() < 0.5 ? "masculino" : "feminino";
-        
-        // 2. Sorteia a FAIXA ETÁRIA para este perfil específico
-        const ageRanges: (keyof typeof maleNames)[] = ["18-24", "25-34", "35-44", "45-54"];
-        profileAgeRange = ageRanges[Math.floor(Math.random() * ageRanges.length)];
-        // --- FIM: LÓGICA CORRIGIDA ---
 
+        // 1. Sorteia o GÊNERO para este perfil específico (homem ou mulher)
+        profileGender = Math.random() < 0.5 ? "masculino" : "feminino"
+
+        // 2. Sorteia a FAIXA ETÁRIA para este perfil específico
+        const ageRanges: (keyof typeof maleNames)[] = ["18-24", "25-34", "35-44", "45-54"]
+        profileAgeRange = ageRanges[Math.floor(Math.random() * ageRanges.length)]
+        // --- FIM: LÓGICA CORRIGIDA ---
       } else {
         // Lógica original para masculino/feminino (mostra o gênero oposto)
-        profileGender = selectedGender === "masculino" ? "feminino" : "masculino";
-        profileAgeRange = ageRange as keyof typeof maleNames;
+        profileGender = selectedGender === "masculino" ? "feminino" : "masculino"
+        profileAgeRange = ageRange as keyof typeof maleNames
       }
 
-      let names: string[];
-      let photoArray: string[];
+      let names: string[]
+      let photoArray: string[]
 
       // 3. AGORA, com o gênero e idade definidos, pega os nomes e fotos corretos
-      if (profileGender === 'masculino') {
-        names = maleNames[profileAgeRange] || [];
+      if (profileGender === "masculino") {
+        names = maleNames[profileAgeRange] || []
         switch (profileAgeRange) {
-          case "18-24": photoArray = malePhotos1824; break;
-          case "25-34": photoArray = malePhotos2534; break;
-          case "35-44": photoArray = malePhotos3544; break;
-          case "45-54": photoArray = malePhotos4554; break;
-          default: photoArray = malePhotos2534;
+          case "18-24":
+            photoArray = malePhotos1824
+            break
+          case "25-34":
+            photoArray = malePhotos2534
+            break
+          case "35-44":
+            photoArray = malePhotos3544
+            break
+          case "45-54":
+            photoArray = malePhotos4554
+            break
+          default:
+            photoArray = malePhotos2534
         }
-      } else { // feminino
-        names = femaleNames[profileAgeRange] || [];
+      } else {
+        // feminino
+        names = femaleNames[profileAgeRange] || []
         switch (profileAgeRange) {
-          case "18-24": photoArray = femalePhotos1824; break;
-          case "25-34": photoArray = femalePhotos2534; break;
-          case "35-44": photoArray = femalePhotos3544; break;
-          case "45-54": photoArray = femalePhotos4554; break;
-          default: photoArray = femalePhotos2534;
+          case "18-24":
+            photoArray = femalePhotos1824
+            break
+          case "25-34":
+            photoArray = femalePhotos2534
+            break
+          case "35-44":
+            photoArray = femalePhotos3544
+            break
+          case "45-54":
+            photoArray = femalePhotos4554
+            break
+          default:
+            photoArray = femalePhotos2534
         }
       }
-      
-      const name = getUniqueItem(names, usedNames);
-      const profileImage = getUniqueItem(photoArray, usedImages);
-      const age = Math.floor(Math.random() * 7) + (parseInt(profileAgeRange.split("-")[0]) || 25);
+
+      const name = getUniqueItem(names, usedNames)
+      const profileImage = getUniqueItem(photoArray, usedImages)
+      const age = Math.floor(Math.random() * 7) + (parseInt(profileAgeRange.split("-")[0]) || 25)
 
       profiles.push({
         name,
@@ -1151,11 +1178,11 @@ export default function SigiloX() {
         personality: personalityTags[Math.floor(Math.random() * personalityTags.length)],
         interests: interestTags[Math.floor(Math.random() * interestTags.length)],
         verified: Math.random() > 0.5,
-      });
+      })
     }
 
-    setGeneratedProfiles(profiles);
-    return profiles;
+    setGeneratedProfiles(profiles)
+    return profiles
   }, [
     selectedGender,
     ageRange,
@@ -1169,7 +1196,7 @@ export default function SigiloX() {
     malePhotos2534,
     malePhotos3544,
     malePhotos4554,
-  ]);
+  ])
 
   const openProfileModal = (profile: any) => {
     setSelectedProfile(profile)
@@ -1227,6 +1254,7 @@ export default function SigiloX() {
 
   return (
     <div className="min-h-screen" style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, sans-serif" }}>
+      {/* O RESTANTE DO SEU CÓDIGO JSX (RETURN) CONTINUA AQUI, SEM ALTERAÇÕES */}
       {/* Global Progress Bar - Mobile Optimized */}
       {currentStep !== "landing" && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
@@ -2163,8 +2191,8 @@ export default function SigiloX() {
                           stepCompleted.conversations
                             ? "bg-green-50"
                             : stepCompleted.profilePhotos
-                              ? "bg-blue-50"
-                              : "bg-gray-50"
+                            ? "bg-blue-50"
+                            : "bg-gray-50"
                         }`}
                       >
                         {stepCompleted.conversations ? (
@@ -2189,8 +2217,8 @@ export default function SigiloX() {
                           stepCompleted.finalizing
                             ? "bg-green-50"
                             : stepCompleted.conversations
-                              ? "bg-blue-50"
-                              : "bg-gray-50"
+                            ? "bg-blue-50"
+                            : "bg-gray-50"
                         }`}
                       >
                         {stepCompleted.finalizing ? (
@@ -2301,9 +2329,7 @@ export default function SigiloX() {
                     <h3 className="text-lg sm:text-xl font-bold text-[#333333] mb-4 sm:mb-6">
                       🔥 RECENT MATCHES FOUND
                     </h3>
-                       <p className="text-sm text-gray-600 text-left mb-6">
-    Tap on a match to view more information
-  </p>
+                    <p className="text-sm text-gray-600 text-left mb-6">Tap on a match to view more information</p>
                     <div className="space-y-4">
                       {generatedProfiles.map((profile, index) => (
                         <div
@@ -2440,14 +2466,17 @@ export default function SigiloX() {
                     </div>
 
                     {/* Direct Checkout Button - Usando a tag <a> (Recomendado) */}
-<a
-  href="https://pay.mundpay.com/0199049a-2657-7034-ba90-39e99cd470e1?ref="
-  target="_blank"
-  rel="noopener noreferrer"
-  className="block w-full text-center bg-gradient-to-r from-[#FF0066] to-[#FF3333] hover:from-[#FF0066] hover:to-[#FF3333] text-white font-bold py-4 sm:py-6 text-sm sm:text-base md:text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 mb-4 sm:mb-6 overflow-hidden"
->
-  <span className="block text-center leading-tight px-2"> 🔓 UNLOCK MY REPORT - I'M READY FOR THE TRUTH </span>
-</a>
+                    <a
+                      href="https://pay.mundpay.com/0199049a-2657-7034-ba90-39e99cd470e1?ref="
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full text-center bg-gradient-to-r from-[#FF0066] to-[#FF3333] hover:from-[#FF0066] hover:to-[#FF3333] text-white font-bold py-4 sm:py-6 text-sm sm:text-base md:text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 mb-4 sm:mb-6 overflow-hidden"
+                    >
+                      <span className="block text-center leading-tight px-2">
+                        {" "}
+                        🔓 UNLOCK MY REPORT - I'M READY FOR THE TRUTH{" "}
+                      </span>
+                    </a>
 
                     {/* Final Reassurance */}
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
@@ -2601,7 +2630,13 @@ export default function SigiloX() {
 
           {/* Offer Page */}
           {currentStep === "offer" && (
-            <motion.div key="offer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="min-h-screen bg-gradient-to-br from-[#1C2833] to-[#6C63FF] px-4 py-6 sm:py-8" >
+            <motion.div
+              key="offer"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="min-h-screen bg-gradient-to-br from-[#1C2833] to-[#6C63FF] px-4 py-6 sm:py-8"
+            >
               <div className="container mx-auto max-w-2xl">
                 <Card className="bg-white rounded-2xl shadow-lg border-0">
                   <CardContent className="p-6 sm:p-8 text-center">
@@ -2610,10 +2645,20 @@ export default function SigiloX() {
                       <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-red-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
                         <Heart className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                       </div>
-                      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#333333] mb-3 sm:mb-4"> You Deserve to Know the Whole Truth </h1>
-                      <p className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-6 leading-relaxed"> Stop wondering. Stop losing sleep. Get every detail - completely confidential. </p>
+                      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#333333] mb-3 sm:mb-4">
+                        {" "}
+                        You Deserve to Know the Whole Truth{" "}
+                      </h1>
+                      <p className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-6 leading-relaxed">
+                        {" "}
+                        Stop wondering. Stop losing sleep. Get every detail - completely confidential.{" "}
+                      </p>
                       <div className="bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-200 rounded-xl p-4 sm:p-6">
-                        <p className="text-sm sm:text-base text-red-700 font-semibold leading-relaxed"> Your instincts were right. Now see exactly what they've been hiding while looking you in the eye and lying. </p>
+                        <p className="text-sm sm:text-base text-red-700 font-semibold leading-relaxed">
+                          {" "}
+                          Your instincts were right. Now see exactly what they've been hiding while looking you in the
+                          eye and lying.{" "}
+                        </p>
                       </div>
                     </div>
 
@@ -2623,25 +2668,39 @@ export default function SigiloX() {
                         <div className="text-2xl sm:text-3xl text-gray-400 line-through">$47.00</div>
                         <div className="text-4xl sm:text-5xl font-bold text-[#FF0066]">$17.00</div>
                       </div>
-                      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-red-500 to-pink-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full text-sm sm:text-base font-bold mb-4"> 🔥 62% OFF - LIMITED TIME </div>
-                      <p className="text-sm sm:text-base text-gray-600 font-medium"> One-time payment for lifetime access to your complete report </p>
+                      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-red-500 to-pink-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full text-sm sm:text-base font-bold mb-4">
+                        {" "}
+                        🔥 62% OFF - LIMITED TIME{" "}
+                      </div>
+                      <p className="text-sm sm:text-base text-gray-600 font-medium">
+                        {" "}
+                        One-time payment for lifetime access to your complete report{" "}
+                      </p>
                     </div>
 
                     {/* What You'll Unlock */}
                     <div className="text-left mb-6 sm:mb-8">
-                      <h3 className="text-lg sm:text-xl font-bold text-[#333333] mb-4 sm:mb-6 text-center"> What You'll Unlock: </h3>
+                      <h3 className="text-lg sm:text-xl font-bold text-[#333333] mb-4 sm:mb-6 text-center">
+                        {" "}
+                        What You'll Unlock:{" "}
+                      </h3>
                       <div className="space-y-3 sm:space-y-4">
                         <div className="flex items-start gap-3 sm:gap-4">
                           <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0 mt-1" />
-                          <span className="text-sm sm:text-base text-gray-700 font-medium"> Every Single Profile Photo (including ones they think you'll never see) </span>
+                          <span className="text-sm sm:text-base text-gray-700 font-medium">
+                            {" "}
+                            Every Single Profile Photo (including ones they think you'll never see){" "}
+                          </span>
                         </div>
                         <div className="flex items-start gap-3 sm:gap-4">
                           <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0 mt-1" />
-                          <span className="text-sm sm:text-base text-gray-700 font-medium"> Complete Conversation History (see exactly what they're telling other people) </span>
+                          <span className="text-sm sm:text-base text-gray-700 font-medium">
+                            {" "}
+                            Complete Conversation History (see exactly what they're telling other people){" "}
+                          </span>
                         </div>
                       </div>
                     </div>
-
                   </CardContent>
                 </Card>
               </div>

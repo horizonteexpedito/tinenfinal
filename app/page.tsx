@@ -1,14 +1,3 @@
-Com certeza! Substituí o bloco de código antigo pelo novo que você forneceu para interagir com a API do ActiveCampaign.
-
-A alteração foi feita dentro da função `handleSubmitForm`. O novo código agora executa duas etapas:
-1.  **Cria o contato** na sua conta do ActiveCampaign usando o e-mail e o telefone fornecidos.
-2.  **Adiciona a tag** "tinder check en - usuario criado" ao contato recém-criado.
-
-Adicionei também verificações de erro para cada chamada à API. Se a criação do contato falhar, o código não tentará adicionar a tag, evitando erros.
-
-Aqui está o código completo e corrigido do seu componente `SigiloX`. Você pode copiar e colar todo o conteúdo no seu arquivo.
-
-```jsx
 "use client"
 
 import type React from "react"

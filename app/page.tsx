@@ -1224,73 +1224,39 @@ export default function SigiloX() {
     userEmail.includes("@")
 
   // Function to submit email and proceed to verification
-  const handleSubmitForm = async () => {
-    if (!canVerify) return
+ const handleSubmitForm = async () => {
+  if (!canVerify) return
 
-    setIsSubmittingEmail(true)
+  setIsSubmittingEmail(true)
 
-    // --- CÓDIGO SUBSTITUÍDO ---
-    try {
-      // 1. Criar o contato
-      const contactResponse = await fetch("https://madsonhenryads.api-us1.com/api/3/contacts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // ATENÇÃO: É uma má prática expor a API Key no front-end.
-          // O ideal é fazer essa chamada a partir de uma API Route do Next.js.
-          "Api-Token": "34c434c11fe018fb4b2edf7238e335d32b465b283567600c84a7e2310d7081a0affb",
-        },
-        body: JSON.stringify({
-          contact: {
-            email: userEmail,
-            phone: phoneNumber.replace(/[^0-9+]/g, ""), // Limpa o número de telefone
-            status: 1, // 1 = subscribed
-          },
-        }),
-      })
+  try {
+    // Chama a SUA API Route segura, que está no back-end
+    const response = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userEmail: userEmail,
+        phoneNumber: phoneNumber.replace(/[^0-9+]/g, ""), // Envia o número limpo
+      }),
+    })
 
-      // Verifica se a criação do contato falhou
-      if (!contactResponse.ok) {
-        const errorData = await contactResponse.json()
-        console.error("Falha ao criar contato:", errorData)
-        throw new Error("Failed to create contact on ActiveCampaign.")
-      }
-
-      const data = await contactResponse.json()
-      const contactId = data.contact.id // Obtém o ID do contato criado
-
-      // 2. Adicionar a tag ao contato criado
-      const tagResponse = await fetch("https://madsonhenryads.api-us1.com/api/3/contactTags", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Api-Token": "34c434c11fe018fb4b2edf7238e335d32b465b283567600c84a7e2310d7081a0affb",
-        },
-        body: JSON.stringify({
-          contactTag: {
-            contact: contactId,
-            tag: 2, // ID da tag "tinder check en - usuario criado"
-          },
-        }),
-      })
-
-      // Verifica se a adição da tag falhou
-      if (!tagResponse.ok) {
-        const errorData = await tagResponse.json()
-        console.error("Falha ao adicionar tag:", errorData)
-        throw new Error("Failed to add tag to contact on ActiveCampaign.")
-      }
-    } catch (error) {
-      console.error("Erro ao submeter para o ActiveCampaign:", error)
-      // Mesmo com erro na API, podemos continuar para a próxima etapa se desejado
-      // ou mostrar uma mensagem de erro para o usuário.
-    } finally {
-      // Esta parte é executada independentemente de sucesso ou falha
-      setIsSubmittingEmail(false)
-      setCurrentStep("verification")
+    // Se a sua API interna retornar um erro, podemos tratar aqui
+    if (!response.ok) {
+      // Opcional: mostrar um erro para o usuário se a inscrição falhar
+      console.error("Subscription failed.")
+      // Poderia-se adicionar um setError("Falha ao se inscrever. Tente novamente.")
     }
-    // --- FIM DO CÓDIGO SUBSTITUÍDO ---
+
+  } catch (error) {
+    console.error("Error calling the subscribe API:", error)
+  } finally {
+    // O finally garante que o usuário avance, mesmo que a captura do e-mail falhe
+    setIsSubmittingEmail(false)
+    setCurrentStep("verification")
   }
+}
 
   return (
     <div className="min-h-screen" style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, sans-serif" }}>

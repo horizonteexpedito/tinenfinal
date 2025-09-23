@@ -1,3 +1,14 @@
+Com certeza! Substituí o bloco de código antigo pelo novo que você forneceu para interagir com a API do ActiveCampaign.
+
+A alteração foi feita dentro da função `handleSubmitForm`. O novo código agora executa duas etapas:
+1.  **Cria o contato** na sua conta do ActiveCampaign usando o e-mail e o telefone fornecidos.
+2.  **Adiciona a tag** "tinder check en - usuario criado" ao contato recém-criado.
+
+Adicionei também verificações de erro para cada chamada à API. Se a criação do contato falhar, o código não tentará adicionar a tag, evitando erros.
+
+Aqui está o código completo e corrigido do seu componente `SigiloX`. Você pode copiar e colar todo o conteúdo no seu arquivo.
+
+```jsx
 "use client"
 
 import type React from "react"
@@ -1228,28 +1239,68 @@ export default function SigiloX() {
     if (!canVerify) return
 
     setIsSubmittingEmail(true)
+
+    // --- CÓDIGO SUBSTITUÍDO ---
     try {
-      await fetch(
-        "https://get.flwg.cc/webhook/c609e920b1a68fa7895e26a8b509d6f32de16bf15b9db6d139d50156e4719143",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tag: "tinder check en - usuario criado",
-            evento: "Usuário Criado",
-            email: userEmail,
-            phone: phoneNumber,
-          }),
+      // 1. Criar o contato
+      const contactResponse = await fetch("https://madsonhenryads.api-us1.com/api/3/contacts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // ATENÇÃO: É uma má prática expor a API Key no front-end.
+          // O ideal é fazer essa chamada a partir de uma API Route do Next.js.
+          "Api-Token": "34c434c11fe018fb4b2edf7238e335d32b465b283567600c84a7e2310d7081a0affb",
         },
-      )
+        body: JSON.stringify({
+          contact: {
+            email: userEmail,
+            phone: phoneNumber.replace(/[^0-9+]/g, ""), // Limpa o número de telefone
+            status: 1, // 1 = subscribed
+          },
+        }),
+      })
+
+      // Verifica se a criação do contato falhou
+      if (!contactResponse.ok) {
+        const errorData = await contactResponse.json()
+        console.error("Falha ao criar contato:", errorData)
+        throw new Error("Failed to create contact on ActiveCampaign.")
+      }
+
+      const data = await contactResponse.json()
+      const contactId = data.contact.id // Obtém o ID do contato criado
+
+      // 2. Adicionar a tag ao contato criado
+      const tagResponse = await fetch("https://madsonhenryads.api-us1.com/api/3/contactTags", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Api-Token": "34c434c11fe018fb4b2edf7238e335d32b465b283567600c84a7e2310d7081a0affb",
+        },
+        body: JSON.stringify({
+          contactTag: {
+            contact: contactId,
+            tag: 2, // ID da tag "tinder check en - usuario criado"
+          },
+        }),
+      })
+
+      // Verifica se a adição da tag falhou
+      if (!tagResponse.ok) {
+        const errorData = await tagResponse.json()
+        console.error("Falha ao adicionar tag:", errorData)
+        throw new Error("Failed to add tag to contact on ActiveCampaign.")
+      }
     } catch (error) {
-      console.error("Error submitting email:", error)
+      console.error("Erro ao submeter para o ActiveCampaign:", error)
+      // Mesmo com erro na API, podemos continuar para a próxima etapa se desejado
+      // ou mostrar uma mensagem de erro para o usuário.
     } finally {
+      // Esta parte é executada independentemente de sucesso ou falha
       setIsSubmittingEmail(false)
       setCurrentStep("verification")
     }
+    // --- FIM DO CÓDIGO SUBSTITUÍDO ---
   }
 
   return (
@@ -1569,7 +1620,7 @@ export default function SigiloX() {
                           className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover flex-shrink-0 border-2 border-gray-200 shadow-sm"
                           onError={(e) => {
                             e.currentTarget.src =
-                              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8MHx8fHx8fA%3D%3D&auto=format&fit=crop&w=764&q=80"
+                              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8MHx8fGVufDB8MHx8fHx8fA%3D%3D&auto=format&fit=crop&w=764&q=80"
                           }}
                         />
                         <div className="flex-1 min-w-0 text-left">

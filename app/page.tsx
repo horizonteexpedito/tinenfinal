@@ -1224,33 +1224,39 @@ export default function SigiloX() {
     userEmail.includes("@")
 
   // Function to submit email and proceed to verification
-  const handleSubmitForm = async () => {
-    if (!canVerify) return
+ const handleSubmitForm = async () => {
+  if (!canVerify) return
 
-    setIsSubmittingEmail(true)
-    try {
-      await fetch(
-        "https://get.flwg.cc/webhook/c609e920b1a68fa7895e26a8b509d6f32de16bf15b9db6d139d50156e4719143",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tag: "tinder check en - usuario criado",
-            evento: "Usuário Criado",
-            email: userEmail,
-            phone: phoneNumber,
-          }),
-        },
-      )
-    } catch (error) {
-      console.error("Error submitting email:", error)
-    } finally {
-      setIsSubmittingEmail(false)
-      setCurrentStep("verification")
+  setIsSubmittingEmail(true)
+
+  try {
+    // Chama a SUA API Route segura, que está no back-end
+    const response = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userEmail: userEmail,
+        phoneNumber: phoneNumber.replace(/[^0-9+]/g, ""), // Envia o número limpo
+      }),
+    })
+
+    // Se a sua API interna retornar um erro, podemos tratar aqui
+    if (!response.ok) {
+      // Opcional: mostrar um erro para o usuário se a inscrição falhar
+      console.error("Subscription failed.")
+      // Poderia-se adicionar um setError("Falha ao se inscrever. Tente novamente.")
     }
+
+  } catch (error) {
+    console.error("Error calling the subscribe API:", error)
+  } finally {
+    // O finally garante que o usuário avance, mesmo que a captura do e-mail falhe
+    setIsSubmittingEmail(false)
+    setCurrentStep("verification")
   }
+}
 
   return (
     <div className="min-h-screen" style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, sans-serif" }}>
@@ -1569,7 +1575,7 @@ export default function SigiloX() {
                           className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover flex-shrink-0 border-2 border-gray-200 shadow-sm"
                           onError={(e) => {
                             e.currentTarget.src =
-                              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8MHx8fHx8fA%3D%3D&auto=format&fit=crop&w=764&q=80"
+                              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8MHx8fGVufDB8MHx8fHx8fA%3D%3D&auto=format&fit=crop&w=764&q=80"
                           }}
                         />
                         <div className="flex-1 min-w-0 text-left">

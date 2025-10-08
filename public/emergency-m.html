@@ -17,6 +17,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
+    <!-- MONETIZZE - Script para compra com 1 click -->
+    <script type="text/javascript" src="https://app.monetizze.com.br/upsell_incorporado.php"></script>
+
     <style>
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
         .fade-in-scale { animation: fadeInScale 0.5s ease-out forwards; }
@@ -188,8 +191,8 @@
                             <div class="flex items-center gap-2"><svg class="w-5 h-5 text-green-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg><span class="text-sm">Track up to 3 numbers</span></div>
                         </div>
                         <div class="text-center" style="width: auto; max-width: 400px; margin: 0 auto;">
-                            <!-- HOTMART - Sales Funnel Container -->
-                            <div id="hotmart-sales-funnel"></div>
+                            <!-- MONETIZZE - Script do iframe que exibe a oferta -->
+                            <iframe class="iframeUpsell" data-chave="b900a7d136d2189ec1753607fc7425f1"></iframe>
                         </div>
                     </div>
                 </div>
@@ -348,12 +351,6 @@
                 setCityAndRender("your area", fallbackLat, fallbackLon);
             }
         });
-    </script>
-
-    <!-- HOTMART - Sales Funnel Widget -->
-    <script src="https://checkout.hotmart.com/lib/hotmart-checkout-elements.js"></script>
-    <script>
-        checkoutElements.init('salesFunnel').mount('#hotmart-sales-funnel');
     </script>
     
 </body>

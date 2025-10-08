@@ -13,6 +13,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     
+    <!-- MONETIZZE - Script para compra com 1 click -->
+    <script type="text/javascript" src="https://app.monetizze.com.br/upsell_incorporado.php"></script>
+
     <style>
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -108,11 +111,11 @@
                 </div>
 
                 <!-- ======================================================= -->
-                <!-- ÁREA DE ALTERAÇÃO: MUNDPAY REMOVIDO, HOTMART INSERIDO    -->
+                <!-- ÁREA DE ALTERAÇÃO: MONETIZZE INSERIDO                   -->
                 <!-- ======================================================= -->
                 <div class="max-w-lg mx-auto">
-                    <!-- HOTMART - Sales Funnel Container -->
-                    <div id="hotmart-sales-funnel"></div>
+                    <!-- MONETIZZE - Script do iframe que exibe a oferta -->
+                    <iframe class="iframeUpsell" data-chave="ea3302e7ead8788205a56384926d8c1c"></iframe>
                 </div>
 
             </div>
@@ -156,10 +159,5 @@
         });
     </script>
     
-    <!-- HOTMART - Sales Funnel Widget -->
-    <script src="https://checkout.hotmart.com/lib/hotmart-checkout-elements.js"></script>
-    <script>
-        checkoutElements.init('salesFunnel').mount('#hotmart-sales-funnel')
-    </script>
 </body>
 </html>

@@ -1,12 +1,13 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { CheckCircle, Clock, Mail, Shield, ArrowLeft, AlertTriangle } from "lucide-react"
+import { CheckCircle, Clock, Mail, Shield, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
 
 export default function ThanksPage() {
-  const router = useRouter() // This is no longer used by the button but kept in case other parts of your page need it.
+  const router = useRouter()
 
   const reportItems = [
     "All profile photos (including private ones)",

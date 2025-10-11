@@ -2473,7 +2473,7 @@ export default function SigiloX() {
 
                     {/* Direct Checkout Button - Usando a tag <a> (Recomendado) */}
                     <a
-                      href="https://app.monetizze.com.br/checkout/KDP435319"
+                      href="https://app.monetizze.com.br/checkout/KKX444980"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="block w-full text-center bg-gradient-to-r from-[#FF0066] to-[#FF3333] hover:from-[#FF0066] hover:to-[#FF3333] text-white font-bold py-4 sm:py-6 text-sm sm:text-base md:text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 mb-4 sm:mb-6 overflow-hidden"
